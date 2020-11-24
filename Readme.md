@@ -35,4 +35,8 @@
 
 ### 三.前台展示页面 index
 
-1. 
+1. 导入elementui
+2. 创建components文件，创建index.vue
+3. 部署路由规则
+4. 使用header,aside,main布局容器
+5. 填充header，aside
