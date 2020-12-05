@@ -12,11 +12,8 @@
                 <el-dropdown>
                   <span class="el-dropdown-link" style="margin-left: 5px;">目录索引<i class="el-icon-arrow-down el-icon--right"></i> </span>
                   <el-dropdown-menu slot="dropdown">
-                    <el-dropdown-item>黄金糕</el-dropdown-item>
-                    <el-dropdown-item>狮子头</el-dropdown-item>
-                    <el-dropdown-item>螺蛳粉</el-dropdown-item>
-                    <el-dropdown-item>双皮奶</el-dropdown-item>
-                    <el-dropdown-item>蚵仔煎</el-dropdown-item>
+                    <el-dropdown-item>暂未开放</el-dropdown-item>
+                    <el-dropdown-item>暂未开放</el-dropdown-item>
                   </el-dropdown-menu>
                 </el-dropdown>
               </li>
@@ -25,11 +22,8 @@
                 <el-dropdown>
                   <span class="el-dropdown-link" style="margin-left: 5px;">联系我<i class="el-icon-arrow-down el-icon--right"></i> </span>
                   <el-dropdown-menu slot="dropdown">
-                    <el-dropdown-item>黄金糕</el-dropdown-item>
-                    <el-dropdown-item>狮子头</el-dropdown-item>
-                    <el-dropdown-item>螺蛳粉</el-dropdown-item>
-                    <el-dropdown-item>双皮奶</el-dropdown-item>
-                    <el-dropdown-item>蚵仔煎</el-dropdown-item>
+                    <el-dropdown-item>暂未开放</el-dropdown-item>
+                    <el-dropdown-item>暂未开放</el-dropdown-item>
                   </el-dropdown-menu>
                 </el-dropdown>
               </li>
@@ -39,60 +33,69 @@
       </el-card>
     </el-header>
     <el-container>
-      <el-aside width="200px" style="padding-top: 30px;">
-        <el-menu default-active="2" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose">
-          <el-submenu index="1">
+      <el-aside width="300px" style="padding-top: 30px;">
+        <el-menu class="el-menu-vertical-demo" text-color="#242424" router unique-opened :default-active="activePath">
+          <el-submenu :index="item.my_aside_id + ''" v-for="item in asideInfo" :key="item.my_aside_id">
             <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>导航一</span>
+              <i :class="item.my_aside_id === 1 ? 'el-icon-chat-dot-round' : 'el-icon-menu'"></i>
+              <span>{{ item.my_aside_lv1 }}</span>
             </template>
-            <el-menu-item-group>
-              <el-menu-item index="1-1">选项1</el-menu-item>
-              <el-menu-item index="1-2">选项2</el-menu-item>
-            </el-menu-item-group>
-          </el-submenu>
-          <el-submenu index="2">
-            <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>导航二</span>
-            </template>
-            <el-menu-item-group>
-              <el-menu-item index="1-1">选项1</el-menu-item>
-              <el-menu-item index="1-2">选项2</el-menu-item>
-            </el-menu-item-group>
-          </el-submenu>
-          <el-submenu index="3">
-            <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>导航三</span>
-            </template>
-            <el-menu-item-group>
-              <el-menu-item index="1-1">选项1</el-menu-item>
-              <el-menu-item index="1-2">选项2</el-menu-item>
-            </el-menu-item-group>
+            <el-menu-item :index="'/' + subItem.path" v-for="subItem in JSON.parse(item.my_aside_lv2)" :key="subItem.path" @click="saveNavState('/' + subItem.path)">{{
+              subItem.content
+            }}</el-menu-item>
           </el-submenu>
         </el-menu>
       </el-aside>
       <el-main>
-        <router-view />
+        <keep-alive>
+          <router-view :key="$route.fullPath" />
+        </keep-alive>
       </el-main>
     </el-container>
   </el-container>
 </template>
 
 <script>
+// import article from './article'
+
 export default {
   data() {
     return {
-      input1: ''
+      input1: '',
+      asideInfo: [],
+      activePath: '',
+      pathInfo: []
     }
   },
+  created() {
+    this.getAsideInfo()
+    this.activePath = window.sessionStorage.getItem('activePath')
+  },
   methods: {
-    handleOpen(key, keyPath) {
-      console.log(key, keyPath)
+    async getAsideInfo() {
+      const { data: res } = await this.$http.get('myblog/getAsideInfo')
+      if (res.status !== 0) {
+        return this.$message.error('获取侧边栏导航数据失败！')
+      }
+      this.asideInfo = res.data
+
+      // 动态添加二级路由  +  keep-alive key值不同使相同组件不缓存
+      res.data.forEach(element => {
+        JSON.parse(element.my_aside_lv2).forEach(value => {
+          this.pathInfo.push(value.path)
+        })
+      })
+      var arr = []
+      this.pathInfo.forEach(element => {
+        arr.push({ path: '/' + element, component: () => import('../components/article.vue') })
+      })
+      this.$router.options.routes[3].children.push(...arr)
+      this.$router.addRoutes(this.$router.options.routes)
     },
-    handleClose(key, keyPath) {
-      console.log(key, keyPath)
+    // 当前激活的菜单
+    saveNavState(path) {
+      window.sessionStorage.setItem('activePath', path)
+      this.activePath = path
     }
   }
 }
@@ -134,8 +137,27 @@ export default {
   font-size: 12px;
 }
 
-  .el-dropdown-link:hover {
-    cursor: pointer;
-    color: #67c23a;
-  }
+.el-dropdown-link:hover {
+  cursor: pointer;
+  color: #67c23a;
+}
+
+.el-submenu:hover span {
+  color: #67c23a;
+}
+
+.el-submenu span {
+  font-size: 15px;
+}
+
+.el-submenu i {
+  margin-top: 5px;
+}
+
+.el-menu-item.is-active {
+  font-weight: 600;
+  color: #3eaf7c;
+  background: rgba(62, 175, 124, 0.15);
+  border-right: 3px solid #3eaf7c;
+}
 </style>
